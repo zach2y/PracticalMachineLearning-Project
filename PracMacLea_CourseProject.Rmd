@@ -1,0 +1,207 @@
+---
+title: "Course Project - Practical Machine Learning Coursera"
+author: "Zachary Yong"
+date: '2022-06-27'
+output:
+  html_document: default
+  pdf_document: default
+---
+
+## Executive Summary
+This report is for the Coursera Practical Machine Learning Course Project. 
+
+Data from the accelerometers on the belt, forearm, arm, and dumbbell of 6 participants were used to predict the the manner in which they did the exercise. This report will describe how I built my model, how I used cross validation, what I think the expected out of sample error is. 
+
+Three models were evaluated: a) Classification Tree, b) Random Forest, and c) Gradient Boosting Machines using a 5-fold cross validation on a training set. The evaluation showed that random forest was the most accurate model with 99.3% in-sample accuracy. Using a validation set, the out of sample error was 0.7%. The random forest model was used to predict the 20 test cases provided.
+
+## Background
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset). 
+
+## Data 
+The training data for this project are available here: 
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har. If you use the document you create for this class for any purpose please cite them as they have been very generous in allowing their data to be used for this kind of assignment.
+
+## Report is divided into:
+1) [Load Data](#load-data)
+2) [Explore Data](#explore-data)
+3) [Prepare Data](#prepare-data)
+4) [Evaluate Algorithms](#evaluate-algorithms)
+5) [Predict Test Set](#predict-test-set)
+
+## 1) Load Data
+### Load libraries
+``` {r, libraries, message=F, warnings=F}
+library(lattice)
+library(ggplot2)
+library(caret)
+```
+
+### Load dataset
+```{r load}
+if(!file.exists("./data")){dir.create("./data")}
+url1 <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+url2 <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+f1 <- file.path("./data", "pml-training.csv")
+f2 <- file.path("./data", "pml-testing.csv")
+download.file(url1, f1)
+download.file(url2, f2)
+
+training = read.csv(f1, sep=",", header=TRUE, na.strings = c("NA","",'#DIV/0!'))
+testing = read.csv(f2, sep=",", header=TRUE, na.strings = c("NA","",'#DIV/0!'))
+
+```
+
+### Split training set into sub-training/test sets
+``` {r split}
+set.seed(8484)
+inTrain <- createDataPartition(training$classe, p = 3/4)[[1]]
+
+subTrain <- training[ inTrain,]
+
+validation <- training[-inTrain,]
+```
+
+## 2) Explore Data
+### Descriptive statistics
+``` {r desc}
+str(subTrain, list.len=10, vec.len=2.5)
+```
+
+The first 7 columns are metadata that can be removed from the analysis. There are also many columns with missing values which we will remove them later.
+
+### Visualization
+The "classe" variable is plotted out to visualize the spead of the types of exercise.
+```{r visual}
+qplot(subTrain$classe)
+```
+
+Seem to be an even spread across the different labels with "A" about 30% higher than the rest.
+
+## 3) Prepare Data
+### Clean data
+
+Remove metadata (rows 1-7)
+```{r metadata}
+subTrain <- subTrain[,-c(1:7)]
+```
+
+Remove variables that contains mostly missing values
+```{r na}
+# Check number of NAs in each column
+table(colSums(is.na(subTrain)))
+```
+
+100 variables contains 98% or more missing values (14409/14718*100) and will be removed from the analysis.
+
+``` {r remove na}
+subTrain<- subTrain[,colSums(is.na(subTrain))<14409]
+```
+
+Next, the variables with near-zero variance will be removed.
+
+```{r zero}
+nearZeroVar(subTrain)
+```
+
+After removing the variables with missing values, the remaining 53 variables do not have near-zero variance.
+
+## 4) Evaluate Algorithms
+### Train Control
+
+A 5-fold **cross validation** will be used to estimate accuracy.
+```{r control}
+control <- trainControl(method="cv", number=5, verboseIter=FALSE)
+metric <- "Accuracy"
+```
+
+First, we will evaluate 3 algorithms:
+
+a) Classification Tree
+b) Random Forest
+c) Gradient Boosting Machines
+
+```{r evaluate, cache=TRUE}
+# a) Classification Tree
+set.seed(86)
+fitCart <- train(classe ~ .,method="rpart",data=subTrain, metric=metric, trControl=control)
+
+# b) Random Forest
+set.seed(86)
+fitRF <- train(classe ~ .,method="rf",data=subTrain, metric=metric, trControl=control)
+
+# c) Gradient Boosting Machines
+set.seed(86)
+fitGbm <- train(classe ~ .,method="gbm",data=subTrain, metric=metric, trControl=control, verbose=FALSE)
+
+# summarize accuracy of models
+results <- resamples(list(cart=fitCart, rf=fitRF, gbm=fitGbm))
+summary(results)
+dotplot(results)
+```
+``` {r RF}
+# Summary of best model
+fitRF
+```
+
+Random forest was the most accurate model. 
+
+Next is to get an idea of the accuracy of the model using the validation set. The RF model will be used on a validation set and summarized using a confusion matrix.
+
+``` {r validation}
+predictions <- predict(fitRF, validation)
+confusionMatrix(predictions, factor(validation$classe))
+```
+
+The accuracy is 99.3% which is about the same as the in-sample accuracy. 
+The **out of sample error is 0.7%**. 
+This suggest that this model is accurate and reliable model.
+
+## 5) Predict Test Set
+The random forest model with 99.3% accuracy and 0.7% expected out of sample error will be used to predict the manner of exercise (classe) for the 20 different test cases
+
+```{r test}
+predTest <- predict(fitRF, testing)
+predTest
+```
+
+## Appendix
+
+Correlation matrix of variables of the sub-training set with strong correlation (>0.8)
+
+```{r cor}
+# Run correlation
+corrPlot <- cor(subTrain[, -length(names(subTrain))])
+
+# Drop duplicates and perfect correlations (cor = 1)
+corrPlot[lower.tri(corrPlot,diag=TRUE)] <- NA
+corrPlot[corrPlot == 1] <- NA
+
+# Convert into a 3-column df
+corrPlot <- as.data.frame(as.table(corrPlot))
+
+# Remove the NA values table 
+corrPlot <- na.omit(corrPlot)
+
+# Select strong correlations
+corrPlot <- subset(corrPlot, abs(Freq) > 0.8)
+# Sort by highest correlation
+corrPlot <- corrPlot[order(-abs(corrPlot$Freq)),] 
+
+# Convert df back into matrix in order to plot with corrplot
+mat_corrPlot <- reshape2::acast(corrPlot, Var1~Var2, value.var="Freq")
+
+# Plot
+corrplot::corrplot(mat_corrPlot, is.corr = FALSE, na.label=" ", tl.col="black", cl.align.text="l")
+```
+
+Plot random forest
+```{r, plotrf}
+plot(fitRF)
+```
