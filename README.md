@@ -1,9 +1,7 @@
 # Course Project - Practical Machine Learning Coursera
 This repository is for the Coursera Practical Machine Learning Course Project. 
 
-# Report
-1. [HTML](#)
-2. [R Markdown](#)
+Link to my [Report](#https://zach2y.github.io/PracticalMachineLearning-Project/)
 
 # Overview
 Data from the accelerometers on the belt, forearm, arm, and dumbbell of 6 participants were used to predict the the manner in which they did the exercise. This report will describe how I built my model, how I used cross validation, what I think the expected out of sample error is. 
