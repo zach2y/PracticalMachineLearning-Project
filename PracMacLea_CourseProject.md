@@ -29,13 +29,13 @@ https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
 The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har. If you use the document you create for this class for any purpose please cite them as they have been very generous in allowing their data to be used for this kind of assignment.
 
 ## Report is divided into:
-1) [Load Data](#load-data)
-2) [Explore Data](#explore-data)
-3) [Prepare Data](#prepare-data)
-4) [Evaluate Algorithms](#evaluate-algorithms)
-5) [Predict Test Set](#predict-test-set)
+1) [Load Data](#1-load-data)
+2) [Explore Data](#2-explore-data)
+3) [Prepare Data](#3-prepare-data)
+4) [Evaluate Algorithms](#4-evaluate-algorithms)
+5) [Predict Test Set](#5-predict-test-set)
 
-## 1) Load Data {#load-data}
+## 1) Load Data
 ### Load libraries
 
 ```r
