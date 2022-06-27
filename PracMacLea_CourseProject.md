@@ -35,7 +35,7 @@ The data for this project come from this source: http://groupware.les.inf.puc-ri
 4) [Evaluate Algorithms](#evaluate-algorithms)
 5) [Predict Test Set](#predict-test-set)
 
-## 1) Load Data
+## 1) Load Data {#load-data}
 ### Load libraries
 
 ```r
